@@ -1,11 +1,24 @@
+# Python Libraries
 from scrape import GetHistoricalData
 from luigi import IntParameter, Parameter, BoolParameter, Task, LocalTarget, build
+from csci_utils.luigi.task import TargetOutput, Requirement, Requires
+
+# Local Imports
 import indicators as ind
-from csci_utils.luigi.task import Requirement, Requires, TargetOutput
 from utils import combine_series, evaluate_crossover, evaluate_profit
 
 
 class Backtest(Task):
+    """Abstract Backtest Task containing parameters, requires, and output common to all tasks
+
+    Parameters:
+        symbol: The stock symbol (str)
+        interval: The unit of time per row (str)
+        short: Defaults to False. True if you want to observe a shorting strategy.
+    """
+
+    requires = Requires()
+    history = Requirement(GetHistoricalData)
     symbol = Parameter(default="AAPL")
     interval = Parameter(default="1d")
     short = BoolParameter(default=False)
@@ -16,56 +29,45 @@ class Backtest(Task):
     # TODO: Figure how to add shorting to name
 
 
-class SMA_Divergence(Backtest):
-    # Luigi Task Requirements as Descriptors
-    requires = Requires()
-    history = Requirement(GetHistoricalData)
+class MA_Divergence(Backtest):
+    """This strategy involves buying (or covering) when the fast MA passes the slow MA
+    and selling (or shorting) when the fast MA falls below the slow MA
 
-    # Parameters
+    Parameters:
+        slow: Number of time units the slow SMA is calculated over (int)
+        fast: Number of time units the slow SMA is calculated over (int)
+        short: Defaults to False. True if you want to observe a shorting strategy.
+        use_simple_ma: Defaults to False. This strategy will calculate the exponential
+        moving average unless this is set to True, in which case it will calculate the
+        simple moving average
+
+    output:
+        Dataframe showing every trade made using this strategy, % profit per trade,
+        cumulative % profit and profit/loss ratio.
+    """
+
+    # Task Parameters
     slow = IntParameter(default=26)
     fast = IntParameter(default=12)
     short = BoolParameter(default=False)
+    use_simple_ma = BoolParameter(default=False)
 
     def run(self):
         # Use dask to read in just the "Close" column
         df = self.input()["history"].read_dask(columns="Close")
 
-        # Create the slow and fast SMAs
-        slow_sma = ind.calculate_sma(df, self.slow)
-        fast_sma = ind.calculate_sma(df, self.fast)
+        # Use either SMA or EMA depending on parameter
+        if self.use_simple_ma:
+            ma_func = ind.calculate_sma
+        else:
+            ma_func = ind.calculate_ema
 
-        # Combine the Close and SMA series into a dataframe
-        df = combine_series(df, Slow=slow_sma, Fast=fast_sma)
+        # Create the slow and fast MAs
+        slow_ma = ma_func(df, self.slow)
+        fast_ma = ma_func(df, self.fast)
 
-        # Create Action column that uses strategy to determine when to Buy, Sell, or Wait
-        evaluate_crossover(df)
-
-        # Create Condensed dataframe of Profit on trade, Cumulative profit, and win/loss ratio
-        stats = evaluate_profit(df, short=self.short)
-        with self.output().open("w") as file_path:
-            stats.to_csv(file_path)
-
-
-class EMA_Divergence(Backtest):
-    # Luigi Task Requirements as Descriptors
-    requires = Requires()
-    history = Requirement(GetHistoricalData)
-
-    # Parameters
-    slow = IntParameter(default=26)
-    fast = IntParameter(default=12)
-    short = BoolParameter(default=False)
-
-    def run(self):
-        # Use dask to read in just the "Close" column
-        df = self.input()["history"].read_dask(columns="Close")
-
-        # Create the slow and fast EMAs
-        slow_sma = ind.calculate_ema(df, self.slow)
-        fast_sma = ind.calculate_ema(df, self.fast)
-
-        # Combine the Close and EMA series into a dataframe
-        df = combine_series(df, Slow=slow_sma, Fast=fast_sma)
+        # Combine the Close and MA series into a dataframe
+        df = combine_series(df, Slow=slow_ma, Fast=fast_ma)
 
         # Create Action column that uses strategy to determine when to Buy, Sell, or Wait
         evaluate_crossover(df)
@@ -77,11 +79,20 @@ class EMA_Divergence(Backtest):
 
 
 class MACD_Signal_Divergence(Backtest):
-    # Luigi Task Requirements as Descriptors
-    requires = Requires()
-    history = Requirement(GetHistoricalData)
+    """This strategy involves buying (or covering) when the fast MACD line passes the
+    signal line and selling (or shorting) when the MACD line falls below the signal line.
 
-    # Parameters
+    Parameters:
+        slow: Number of time units the slow EMA for MACD is calculated over (int)
+        fast: Number of time units the slow EMA for MACD is calculated over (int)
+        short: Defaults to False. True if you want to observe a shorting strategy.
+
+    output:
+        Dataframe showing every trade made using this strategy, % profit per trade,
+        cumulative % profit and profit/loss ratio.
+    """
+
+    # Task Parameters
     slow = IntParameter(default=26)
     fast = IntParameter(default=12)
     signal = IntParameter(default=9)
@@ -107,6 +118,12 @@ class MACD_Signal_Divergence(Backtest):
             stats.to_csv(file_path)
 
 
+class RSI_Failure_Swings(Backtest):
+    # Task Parameters
+    period = IntParameter(default=14)
+    short = BoolParameter(default=False)
+
+
 if __name__ == "__main__":
-    build([MACD_Signal_Divergence(symbol="BA", interval="1h")], local_scheduler=True)
-    # build([SMAcross(symbol='MSFT', interval="1d", short=True)], local_scheduler=True)
+    # build([MACD_Signal_Divergence(symbol="BA", interval="1h")], local_scheduler=True)
+    build([MA_Divergence(symbol="BA", interval="1d")], local_scheduler=True)
