@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 
-def calculate_sma(prices, period, name="sma"):
+def calculate_sma(prices, period):
     """Calculate Simple Moving Average as an array
 
     ::param Series, list or Array of prices
@@ -56,7 +56,9 @@ def calculate_macd(prices, fast_period=12, slow_period=26, smoother=2):
         raise ValueError("period2 must be greater than period1")
 
     slow_ema = pd.array(calculate_ema(prices, slow_period, smoother=smoother))
-    fast_ema = pd.array(calculate_ema(prices, fast_period, smoother=smoother))[slow_period - fast_period:]
+    fast_ema = pd.array(calculate_ema(prices, fast_period, smoother=smoother))[
+        slow_period - fast_period :
+    ]
 
     return pd.Series(fast_ema - slow_ema)
 
@@ -75,8 +77,8 @@ def calculate_sto_osc(dataframe, period):
     low = dataframe["Low"]
 
     def Stochastic(idx):
-        Max = max(high[idx : period + idx])
-        Min = min(low[idx : period + idx])
+        Max = max(high[idx: period + idx])
+        Min = min(low[idx: period + idx])
         return (close[period + idx - 1] - Min) / (Max - Min)
 
     return pd.Series([Stochastic(i) for i in range(len(close) - period)])
@@ -120,31 +122,3 @@ def calculate_rsi(dataframe, period=14):
     RS = pd.array(up_smma) / pd.array(down_smma)
     RSI = 100 - 100 / (1 + RS)
     return pd.Series(RSI)
-
-
-if __name__ == "__main__":
-    # Use for testing
-    # x = calculate_ema(pd.array([1,2,3,4,5,6,7,8]),3)
-    # print(x)
-
-    df = pd.read_parquet("data/BA/1h/rawdata/part.0.parquet")
-    # x = calculate_ema(df["Close"], 9)
-    # print(x)
-
-    # x = calculate_sma(pd.array([1,2,3,4,5,6,7,8]),3)
-    # print(x)
-
-    x = calculate_macd(df["Close"], 12, 14)
-    print(x)
-    # df = pd.DataFrame({"Close":[1,2,3,4,5,6,7,8,9,10], "High":[1,2,3,4,5,6,7,8,9,10], "Low":[1,2,3,4,5,6,7,8,9,10]})
-    # df = pd.DataFrame({"Close":[100, 95, 100, 105, 100, 95, 100, 105, 110, 120, 130, 135, 125, 130]})
-    # k = calculate_rsi(df, 14)
-    # print(k)
-    # print(len(k))
-    # k = k[~np.isnan(k)]
-    # print(len(k))
-    # print(len(df["Close"]))
-
-
-# For RSI Testing : https://nullbeans.com/how-to-calculate-the-relative-strength-index-rsi/#How_to_calculate_the_RSI
-# https://docs.google.com/spreadsheets/d/1oOb7R6MkF5DlgKSlHlB19T3vEFA3CcWUyCCTGSInbO4/edit#gid=0
