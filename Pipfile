@@ -12,6 +12,12 @@ csci-utils = {editable = true, git = "https://github.com/csci-e-29/2020fa-csci-u
 dask = {extras = ["dataframe"], version = "*"}
 fastparquet = "*"
 s3fs = "*"
+requests = "*"
+yfinance = "*"
+bokeh = "*"
+selenium = "*"
+fpdf = "*"
+bs4 = "*"
 
 [requires]
 python_version = "3.7"
