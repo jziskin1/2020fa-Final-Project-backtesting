@@ -77,8 +77,8 @@ def calculate_sto_osc(dataframe, period):
     low = dataframe["Low"]
 
     def Stochastic(idx):
-        Max = max(high[idx: period + idx])
-        Min = min(low[idx: period + idx])
+        Max = max(high[idx : period + idx])
+        Min = min(low[idx : period + idx])
         return (close[period + idx - 1] - Min) / (Max - Min)
 
     return pd.Series([Stochastic(i) for i in range(len(close) - period)])
