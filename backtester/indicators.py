@@ -1,5 +1,4 @@
-""" Technical indicators used in technical analysis
-"""
+""" Technical indicators used in technical analysis """
 
 import pandas as pd
 import numpy as np

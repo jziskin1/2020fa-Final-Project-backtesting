@@ -27,6 +27,13 @@ def get_range(interval):
         )
 
 
+def get_strategy_text(strategy):
+    """Takes a trading strategy and returns its description"""
+    strat_text={"MACD_Signal_Divergence": "Moving average convergence divergence (MACD) is a trend-following momentum indicator that shows the relationship between two moving averages of a securitys price. The MACD is calculated by subtracting the slow exponential moving average (EMA) from a fast EMA. The MACD Signal Divergence strategy involves tracking the MACD line and an exponential moving average of the MACD called the signal line. When the MACD line crosses above the signal line, it triggers a BUY signal. When the MACD line crosses below the signal line, it triggers a SELL signal.",
+                "MA_Divergence": "The moving average (MA) is a simple technical analysis tool that smooths out price data by creating a constantly updated average price. The average is taken over a specific period of time, like 10 days, 20 minutes, 30 weeks or any time period the trader chooses. The MA Divergence strategy involves tracking a fast MA and slow MA. When the fast MA crosses above the slow MA, it triggers a BUY signal. When the fast MA crosses below the slow MA, it triggers a SELL signal."
+                }
+    return strat_text[strategy]
+
 def combine_series(main, **kwargs):
     """Combine dask dataframe to series of different lengths by trimming from the top.
     keys are all kwargs are the column names of the values when added to dataframe.
@@ -85,7 +92,7 @@ def evaluate_profit(df, short=False):
     """Takes a pandas dataframe with a "Close" price column and an "Action" column.
 
     Trades using said actions and prices. Adds three columns to dataframe:
-    % Profit on Trade, Cumulative % Profit, and Profit/Loss Ratio"
+    % Profit on Trade, Cumulative % Profit, and Win/Loss Ratio"
 
     If short=True, uses a short selling strategy.
 
@@ -137,6 +144,34 @@ def evaluate_profit(df, short=False):
     # Add columns
     adjusted_df["% Profit on Trade"] = percent_profit
     adjusted_df["Cumulative % Profit"] = cumulative_profit_lst
-    adjusted_df["Profit/Loss Ratio"] = win_loss_ratio
+    adjusted_df["Win/Loss Ratio"] = win_loss_ratio
 
     return adjusted_df
+
+
+def recommendation(dataframe):
+    df = pd.read_csv(dataframe)
+    starting_price = df["Close"][1]
+    ending_price = df["Close"][len(df) - 1]
+    percent_price_gain = round((ending_price - starting_price) / starting_price * 100, 2)
+    number_of_trades = int(len(df) / 2)
+    cum_profit = df["Cumulative % Profit"][len(df) - 1]
+    ratio = float(df["Win/Loss Ratio"][len(df) - 1]) * 100
+    output = f"After {number_of_trades} trades, this strategy resulted in an overall profit of {cum_profit}% with a win/loss ratio of {ratio}%."
+    output += f" Over the same period of time, the price of this stock rose {percent_price_gain}%."
+    if float(cum_profit) < 0:
+        output += f" Because this strategy lost money in the long run, it does not receive our recommendation."
+    else:
+        if float(percent_price_gain) < float(cum_profit):
+            output += f" Since this strategy outperformed buying and holding long term, this strategy receives our recommendation."
+        else:
+            if float(ratio) < 40:
+                output += f" Since this strategy does not produce a consistant winning ratio, it does not receive our recommendation."
+
+            elif float(percent_price_gain) * 2 / 3 > float(cum_profit):
+                output += f" Because the profit from this strategy is significantly lower than just buying and holding, this strategy does not receive our recommendation."
+
+            else:
+                output += f" Though this strategy did not create as much profit as buying and holding in this instance, it does seem to be profitable and therefore receives our recommendation."
+
+    return output

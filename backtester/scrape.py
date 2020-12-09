@@ -1,10 +1,4 @@
-""" Luigi tasks and functions used to webscrape stock data to use in
-backtesting and final report
-
-GetHistoricalData: Luigi Task that downloads
-
-
-"""
+""" Webscraping tasks and functions """
 
 from luigi import Task, Parameter, build
 import dask.dataframe as dd
@@ -63,9 +57,6 @@ class GetHistoricalData(Task):
         interval: The unit of time per row (str)
     """
 
-    # TODO: Add parameter based on strategy to only download needed columns.
-    # TODO: Salted
-
     # Task Parameters
     symbol = Parameter(default="AAPL")
     interval = Parameter(default="1d")
@@ -80,12 +71,11 @@ class GetHistoricalData(Task):
         df = stock.history(
             interval=self.interval, period=get_range(self.interval)
         ).iloc[:, :5]
+        df = df.dropna()
         ddf = dd.from_pandas(df, chunksize=500)
         self.output().write_dask(ddf, compression="gzip")
 
-
 if __name__ == "__main__":
-    # build([GetHistoricalData(symbol="BA", interval="1d")], local_scheduler=True)
-    # print(scrape_summary_data("NFLX"))
-    # print(scrape_summary_data("AAPL"))
-    pass
+    build([GetHistoricalData(symbol="AAPL", interval="1wk")], local_scheduler=True)
+    print(scrape_summary_data("AAPL"))
+
