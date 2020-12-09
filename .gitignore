@@ -1,6 +1,6 @@
 data
-junk.py
-visualize_old.py
+.github/junk.py
+.github/visualize_old.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
