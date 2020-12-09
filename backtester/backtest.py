@@ -1,3 +1,5 @@
+"""Luigi Tasks for Backtesting Different Stock Trading Strategies"""
+
 # Python Libraries
 from scrape import GetHistoricalData
 from luigi import IntParameter, Parameter, BoolParameter, Task, LocalTarget, build
@@ -22,11 +24,6 @@ class Backtest(Task):
     symbol = Parameter(default="AAPL")
     interval = Parameter(default="1d")
     short = BoolParameter(default=False)
-    output = TargetOutput(
-        file_pattern="data/{symbol}/{interval}/{task.__class__.__name__}/trading_stats.csv",
-        target_class=LocalTarget,
-    )
-    # TODO: Figure how to add shorting to name
 
 
 class MA_Divergence(Backtest):
@@ -43,7 +40,7 @@ class MA_Divergence(Backtest):
 
     output:
         Dataframe showing every trade made using this strategy, % profit per trade,
-        cumulative % profit and profit/loss ratio.
+        cumulative % profit and win/loss ratio.
     """
 
     # Task Parameters
@@ -51,6 +48,12 @@ class MA_Divergence(Backtest):
     fast = IntParameter(default=12)
     short = BoolParameter(default=False)
     use_simple_ma = BoolParameter(default=False)
+
+    def output(self):
+        file_pattern = f"data/{self.symbol}/{self.interval}/E{self.__class__.__name__}({self.slow},{self.fast})/trading_stats.csv"
+        if self.use_simple_ma:
+            file_pattern = f"data/{self.symbol}/{self.interval}/S{self.__class__.__name__}({self.slow},{self.fast})/trading_stats.csv"
+        return LocalTarget(file_pattern)
 
     def run(self):
         # Use dask to read in just the "Close" column
@@ -89,7 +92,7 @@ class MACD_Signal_Divergence(Backtest):
 
     output:
         Dataframe showing every trade made using this strategy, % profit per trade,
-        cumulative % profit and profit/loss ratio.
+        cumulative % profit and win/loss ratio.
     """
 
     # Task Parameters
@@ -97,6 +100,10 @@ class MACD_Signal_Divergence(Backtest):
     fast = IntParameter(default=12)
     signal = IntParameter(default=9)
     short = BoolParameter(default=False)
+
+    # Target Output as descriptor
+    output = TargetOutput(file_pattern="data/{symbol}/{interval}/{task.__class__.__name__}({slow},{fast},{signal})/trading_stats.csv",
+                          target_class=LocalTarget)
 
     def run(self):
         # Use dask to read in just the "Close" column
@@ -123,7 +130,10 @@ class RSI_Failure_Swings(Backtest):
     period = IntParameter(default=14)
     short = BoolParameter(default=False)
 
+    ### UNDER CONSTRUCTION CHECK BACK SOON!!!
+
 
 if __name__ == "__main__":
-    # build([MACD_Signal_Divergence(symbol="BA", interval="1h")], local_scheduler=True)
-    build([MA_Divergence(symbol="BA", interval="1d")], local_scheduler=True)
+    build([MA_Divergence(symbol="AAPL", interval="1wk", short=True)], local_scheduler=True)
+
+
