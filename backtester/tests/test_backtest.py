@@ -60,23 +60,24 @@ class TestTasks(TestCase):
 
             # Write all expected output paths created by tasks
             written_paths = [
-                tmp +"/_common_metadata",
-                tmp + "/_metadata",
-                tmp + "/_SUCCESS",
-                tmp + "/part.0.parquet",
-                tmp+"/MA_test.csv",
-                tmp+"/MACD_test.csv",
-                tmp + "/RSI_test.csv",
-                tmp + "/Stoc_test.csv",
+                "_common_metadata",
+                "_metadata",
+                "_SUCCESS",
+                "part.0.parquet",
+                "MA_test.csv",
+                "MACD_test.csv",
+                "RSI_test.csv",
+                "Stoc_test.csv",
             ]
 
             # Assert paths exist and are dataframes with the correct row
             for path in written_paths:
-                self.assertTrue(os.path.exists(os.path.join(tmp, path)))
+                full_path = os.path.join(tmp, path)
+                self.assertTrue(os.path.exists(full_path))
 
-                if path[-4:] == ".csv":
+                if full_path[-4:] == ".csv":
                     Expected_cols = ['Date', 'Close', 'Action', '% Profit on Trade', 'Cumulative % Profit', 'Win/Loss Ratio']
-                    self.assertEqual(list(pd.read_csv(path).columns), Expected_cols)
+                    self.assertEqual(list(pd.read_csv(full_path).columns), Expected_cols)
 
 
 if __name__ == "__main__":

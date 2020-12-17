@@ -41,15 +41,15 @@ class TestTasks(TestCase):
 
             # Write all expected output paths created by tasks
             written_paths = [
-                tmp + "/rawdata/_common_metadata",
-                tmp + "/rawdata/_metadata",
-                tmp + "/rawdata/_SUCCESS",
-                tmp + "/rawdata/part.0.parquet",
-                tmp + "/Repo1/Repo2/MA_test.csv",
-                tmp + "/Repo1/Repo2/Profit_Plot.png",
-                tmp + "/Repo1/Repo2/Ratio_Plot.png",
-                tmp + "/Repo1/Repo2/Stock_Chart.png",
-                tmp + "/Repo1/Repo2/Visualize_test.pdf"
+                "rawdata/_common_metadata",
+                "rawdata/_metadata",
+                "rawdata/_SUCCESS",
+                "rawdata/part.0.parquet",
+                "Repo1/Repo2/MA_test.csv",
+                "Repo1/Repo2/Profit_Plot.png",
+                "Repo1/Repo2/Ratio_Plot.png",
+                "Repo1/Repo2/Stock_Chart.png",
+                "Repo1/Repo2/Visualize_test.pdf"
             ]
 
             # Assert paths exist and are dataframes with the correct row
