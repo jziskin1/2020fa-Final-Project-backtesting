@@ -1,15 +1,19 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """ Webscraping tasks and functions """
 
-from luigi import Task, Parameter, build
+from luigi import ExternalTask, Parameter, build
 import dask.dataframe as dd
 import yfinance as yf
 from bs4 import BeautifulSoup
 import requests
 import pandas as pd
-
+from csci_utils.Validation.validater import valid_type
 from csci_utils.luigi.task import Requirement, Requires, TargetOutput
 from csci_utils.luigi.dask.target import ParquetTarget
-from utils import get_range
+
+from .utils import get_range
 
 
 def scrape_summary_data(symbol):
@@ -21,17 +25,25 @@ def scrape_summary_data(symbol):
     Returns:
     Two Pandas Dataframe in a Tuple with up to date summary statistics of stock
     """
+    # Check symbol is a (str), raise type error otherwise
+    valid_type(symbol, str, True)
 
-    # Request data from yahoo finance
-    r = requests.get(f"https://finance.yahoo.com/quote/{symbol}?p={symbol}")
-    soup = BeautifulSoup(r.text, "lxml")
+    try:
+        # Request data from yahoo finance
+        r = requests.get(f"https://finance.yahoo.com/quote/{symbol}?p={symbol}")
 
-    # Create summary stats dictionary and add current price
-    summary = {
-        "Price": soup.find_all("div", {"class": "My(6px) Pos(r) smartphone_Mt(6px)"})[0]
-        .find("span")
-        .text
-    }
+        soup = BeautifulSoup(r.text, "lxml")
+
+        # Create summary stats dictionary and add current price
+        summary = {
+            "Price": soup.find_all("div", {"class": "My(6px) Pos(r) smartphone_Mt(6px)"})[0]
+            .find("span")
+            .text
+        }
+
+    except:
+        # Raise error if stock symbol input is not valid
+        raise ValueError("Did not enter valid stock symbol")
 
     # Use html class strings from inspecting yahoo finance website
     class1_str = (
@@ -48,7 +60,7 @@ def scrape_summary_data(symbol):
     return pd.DataFrame(summary, index=[0])
 
 
-class GetHistoricalData(Task):
+class GetHistoricalData(ExternalTask):
     """Uses the yfinance package to webscrape stock data from yahoo finance
     read in as a dask dataframe, and writes to parquet.
 
@@ -75,7 +87,4 @@ class GetHistoricalData(Task):
         ddf = dd.from_pandas(df, chunksize=500)
         self.output().write_dask(ddf, compression="gzip")
 
-if __name__ == "__main__":
-    build([GetHistoricalData(symbol="AAPL", interval="1wk")], local_scheduler=True)
-    print(scrape_summary_data("AAPL"))
 

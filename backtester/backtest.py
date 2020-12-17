@@ -1,13 +1,16 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """Luigi Tasks for Backtesting Different Stock Trading Strategies"""
 
 # Python Libraries
-from scrape import GetHistoricalData
 from luigi import IntParameter, Parameter, BoolParameter, Task, LocalTarget, build
 from csci_utils.luigi.task import TargetOutput, Requirement, Requires
 
 # Local Imports
-import indicators as ind
-from utils import combine_series, evaluate_crossover, evaluate_profit
+from .scrape import GetHistoricalData
+from .indicators import calculate_ema, calculate_sma, calculate_macd, calculate_rsi, calculate_sto_osc
+from .utils import combine_series, evaluate_crossover, evaluate_profit, evaluate_osc
 
 
 class Backtest(Task):
@@ -50,9 +53,10 @@ class MA_Divergence(Backtest):
     use_simple_ma = BoolParameter(default=False)
 
     def output(self):
-        file_pattern = f"data/{self.symbol}/{self.interval}/E{self.__class__.__name__}({self.slow},{self.fast})/trading_stats.csv"
+        # Change filepattern depending on whether MA is simple or exponential
+        file_pattern = f"data/{self.symbol}/{self.interval}/short_{self.short}/E{self.__class__.__name__}({self.slow},{self.fast})/trading_stats.csv"
         if self.use_simple_ma:
-            file_pattern = f"data/{self.symbol}/{self.interval}/S{self.__class__.__name__}({self.slow},{self.fast})/trading_stats.csv"
+            file_pattern = f"data/{self.symbol}/{self.interval}/short_{self.short}/S{self.__class__.__name__}({self.slow},{self.fast})/trading_stats.csv"
         return LocalTarget(file_pattern)
 
     def run(self):
@@ -61,9 +65,9 @@ class MA_Divergence(Backtest):
 
         # Use either SMA or EMA depending on parameter
         if self.use_simple_ma:
-            ma_func = ind.calculate_sma
+            ma_func = calculate_sma
         else:
-            ma_func = ind.calculate_ema
+            ma_func = calculate_ema
 
         # Create the slow and fast MAs
         slow_ma = ma_func(df, self.slow)
@@ -102,7 +106,7 @@ class MACD_Signal_Divergence(Backtest):
     short = BoolParameter(default=False)
 
     # Target Output as descriptor
-    output = TargetOutput(file_pattern="data/{symbol}/{interval}/{task.__class__.__name__}({slow},{fast},{signal})/trading_stats.csv",
+    output = TargetOutput(file_pattern="data/{symbol}/{interval}/short_{short}/{task.__class__.__name__}({slow},{fast},{signal})/trading_stats.csv",
                           target_class=LocalTarget)
 
     def run(self):
@@ -110,8 +114,8 @@ class MACD_Signal_Divergence(Backtest):
         df = self.input()["history"].read_dask(columns="Close")
 
         # Create MACD and Signal lines
-        macd = ind.calculate_macd(df, self.fast, self.slow)
-        signal = ind.calculate_ema(macd, self.signal)
+        macd = calculate_macd(df, self.fast, self.slow)
+        signal = calculate_ema(macd, self.signal)
 
         # Combine the Close and SMA series into a dataframe
         df = combine_series(df, MACD=macd, Signal=signal)
@@ -125,15 +129,88 @@ class MACD_Signal_Divergence(Backtest):
             stats.to_csv(file_path)
 
 
-class RSI_Failure_Swings(Backtest):
+class RSI_OverSold(Backtest):
+    """This strategy involves buying (or covering) when the RSI passes the lower bound
+    and selling (or shorting) when the RSI falls below the upper bound.
+
+    Parameters:
+        period: Number of time units the RSI is calculated over (int)
+        lower: The lower bound of the RSI. Signals a buy when the RSI passes above this value (int)
+        upper: The upper bound of the RSI. Signals a sell when the RSI passes below this value (int)
+        short: Defaults to False. True if you want to observe a shorting strategy.
+
+    output:
+        Dataframe showing every trade made using this strategy, % profit per trade,
+        cumulative % profit and win/loss ratio.
+    """
     # Task Parameters
     period = IntParameter(default=14)
+    lower = IntParameter(default=30)
+    upper = IntParameter(default=70)
     short = BoolParameter(default=False)
 
-    ### UNDER CONSTRUCTION CHECK BACK SOON!!!
+    # Target Output as descriptor
+    output = TargetOutput(file_pattern="data/{symbol}/{interval}/short_{short}/{task.__class__.__name__}({period},{lower},{upper})/trading_stats.csv",
+                          target_class=LocalTarget)
+
+    def run(self):
+        # Use dask to read in just the "Close" column
+        df = self.input()["history"].read_dask(columns=["Open","Close"])
+
+        # Calculate RSI Line
+        rsi = calculate_rsi(df, self.period)
+
+        # Combine the Open, Close, and RSI series into a dataframe
+        df = combine_series(df, RSI=rsi)
+
+        # Evaluate RSI
+        evaluate_osc(df, self.lower, self.upper, short=False)
+
+        # Create Condensed dataframe of Profit on trade, Cumulative profit, and win/loss ratio
+        stats = evaluate_profit(df, short=self.short)
+        with self.output().open("w") as file_path:
+            stats.to_csv(file_path)
 
 
-if __name__ == "__main__":
-    build([MA_Divergence(symbol="AAPL", interval="1wk", short=True)], local_scheduler=True)
+class Stochastic_Crossover(Backtest):
+    """This strategy involves buying (or covering) when the Stocastic reaches a higher low
+     and then passes the lower bound and selling (or shorting) when the Stocastic reaches a
+     lower high and falls below the upper bound.
 
+    Parameters:
+        period: Number of time units the Stocastic is calculated over (int)
+        lower: The lower bound of the Stocastic. Signals a buy when the RSI passes above this value (int)
+        upper: The upper bound of the Stocastic. Signals a sell when the RSI passes below this value (int)
+        short: Defaults to False. True if you want to observe a shorting strategy.
 
+    output:
+        Dataframe showing every trade made using this strategy, % profit per trade,
+        cumulative % profit and win/loss ratio.
+    """
+    # Task Parameters
+    period = IntParameter(default=14)
+    lower = IntParameter(default=20)
+    upper = IntParameter(default=80)
+    short = BoolParameter(default=False)
+
+    # Target Output as descriptor
+    output = TargetOutput(file_pattern="data/{symbol}/{interval}/short_{short}/{task.__class__.__name__}({period},{lower},{upper})/trading_stats.csv",
+                          target_class=LocalTarget)
+
+    def run(self):
+        # Use dask to read in just the "Close" column
+        df = self.input()["history"].read_dask(columns=["High", "Low", "Close"])
+
+        # Calculate Stochastic Line
+        stoc = calculate_sto_osc(df, self.period)
+
+        # Combine the Open, Close, and RSI series into a dataframe
+        df = combine_series(df, Stochastic=stoc)
+
+        # Evaluate Stochastic
+        evaluate_osc(df, self.lower/100, self.upper/100, short=False)
+
+        # Create Condensed dataframe of Profit on trade, Cumulative profit, and win/loss ratio
+        stats = evaluate_profit(df, short=self.short)
+        with self.output().open("w") as file_path:
+            stats.to_csv(file_path)
