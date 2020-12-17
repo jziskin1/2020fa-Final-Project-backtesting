@@ -1,7 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """ Technical indicators used in technical analysis """
 
 import pandas as pd
+import dask.dataframe as dd
 import numpy as np
+from csci_utils.Validation.validater import valid_type
 
 
 def calculate_sma(prices, period):
@@ -12,6 +17,9 @@ def calculate_sma(prices, period):
 
     ::returns Simple Moving Average
     ::rtype: Pandas Series (1D)"""
+    # Type Check
+    valid_type(period, int, True)
+
     prices = pd.array(prices)
     return pd.Series(
         [np.mean(prices[idx : period + idx]) for idx in range(len(prices) - period + 1)]
@@ -27,6 +35,10 @@ def calculate_ema(prices, period, smoother=2):
 
     ::returns Exponential Moving Average
     ::rtype: Pandas Series (1D)"""
+    # Type Check
+    valid_type(period, int, True)
+    valid_type(smoother, int, True)
+
     prices = pd.array(prices)
 
     sma = sum(prices[:period]) / period
@@ -51,6 +63,11 @@ def calculate_macd(prices, fast_period=12, slow_period=26, smoother=2):
 
     ::returns Moving Average Convergence Divergence
     ::rtype: Pandas Series (1D)"""
+    # Type Check
+    valid_type(fast_period, int, True)
+    valid_type(slow_period, int, True)
+    valid_type(smoother, int, True)
+
     if fast_period >= slow_period:
         raise ValueError("period2 must be greater than period1")
 
@@ -62,7 +79,7 @@ def calculate_macd(prices, fast_period=12, slow_period=26, smoother=2):
     return pd.Series(fast_ema - slow_ema)
 
 
-def calculate_sto_osc(dataframe, period):
+def calculate_sto_osc(prices, period):
     """Calculate Stochastic Oscillator
 
     ::param Dataframe of Closing, High, and Low prices
@@ -70,20 +87,22 @@ def calculate_sto_osc(dataframe, period):
 
     ::returns Calculate Stochastic Oscillator
     ::rtype: Pandas Series (1D)"""
+    # Type Check
+    valid_type(period, int, True)
 
-    close = dataframe["Close"]
-    high = dataframe["High"]
-    low = dataframe["Low"]
+    close = pd.array(prices["Close"])
+    high = pd.array(prices["High"])
+    low = pd.array(prices["Low"])
 
     def Stochastic(idx):
-        Max = max(high[idx : period + idx])
-        Min = min(low[idx : period + idx])
+        Max = max(high[idx: period + idx])
+        Min = min(low[idx: period + idx])
         return (close[period + idx - 1] - Min) / (Max - Min)
 
     return pd.Series([Stochastic(i) for i in range(len(close) - period)])
 
 
-def calculate_rsi(dataframe, period=14):
+def calculate_rsi(prices, period=14):
     """Calculate Relative Strength Index as an array
 
     ::param Dataframe or Series of Closing prices
@@ -91,10 +110,13 @@ def calculate_rsi(dataframe, period=14):
 
     ::returns Relative Strength Index
     ::rtype: ndarray (1D)"""
+    # Type Checks
+    valid_type(prices, (pd.DataFrame, dd.DataFrame), True)
+    valid_type(period, int, True)
 
     # Read in open and closing prices
-    open = dataframe["Open"]
-    close = dataframe["Close"]
+    open = pd.array(prices["Open"])
+    close = pd.array(prices["Close"])
 
     # calculate change in prices.
     # If change is positive add value to up_change add 0 to down_change
