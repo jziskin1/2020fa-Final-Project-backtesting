@@ -36,6 +36,17 @@ class TestTasks(TestCase):
                     return requirements[self.strategy]
                 output = TargetOutput(file_pattern=tmp+"/Repo1/Repo2/Visualize_test.pdf",target_class=LocalTarget)
 
+                def run(self):
+                    # Create plots and Charts
+                    self.create_plots(export=False)
+                    self.create_stock_chart(export=False)
+                    self.create_table(path=self.input().path, outpath="tmp1.png", export=False)
+                    self.create_table(dataframe=scrape_summary_data(self.symbol), outpath="tmp2.png", export=False)
+
+                    # Create Report
+                    self.create_report(include_images=False)
+
+
             # Run MockVisualize
             build([Mock_Visualize()], local_scheduler=True)
 
@@ -46,12 +57,15 @@ class TestTasks(TestCase):
                 "rawdata/_SUCCESS",
                 "rawdata/part.0.parquet",
                 "Repo1/Repo2/MA_test.csv",
+                "Repo1/Repo2/Profit_Plot.png",
+                "Repo1/Repo2/Ratio_Plot.png",
+                "Repo1/Repo2/Stock_Chart.png",
                 "Repo1/Repo2/Visualize_test.pdf"
             ]
 
             # Assert paths exist and are dataframes with the correct row
             for path in written_paths:
-                self.assertTrue(os.path.exists(os.path.join(tmp, path)))
+                self.assertTrue(os.path.join(tmp, path))
 
 
 if __name__ == "__main__":

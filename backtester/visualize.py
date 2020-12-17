@@ -44,7 +44,7 @@ class Visualize(Task):
     def output(self):
         return LocalTarget(os.path.split(self.input().path)[0]+"/Report.pdf")
 
-    def create_plots(self):
+    def create_plots(self, export=True):
         """Creates Percent Profit Plot and Win/Loss Ratio Plot for report"""
         # Read in data from path, fill values
         warnings.simplefilter(action="ignore", category=FutureWarning)
@@ -77,12 +77,13 @@ class Visualize(Task):
         plot2.legend.location = "top_left"
         plot2.y_range = Range1d(0, 1)
 
-        # Export Plots
-        out_dir = os.path.split(self.input().path)[0]
-        export_png(plot1, filename=out_dir + "/Profit_Plot.png")
-        export_png(plot2, filename=out_dir + "/Ratio_Plot.png")
+        # Export Plots (Dependent on a bool for testing purposes)
+        if export:
+            out_dir = os.path.split(self.input().path)[0]
+            export_png(plot1, filename=out_dir + "/Profit_Plot.png")
+            export_png(plot2, filename=out_dir + "/Ratio_Plot.png")
 
-    def create_stock_chart(self):
+    def create_stock_chart(self, export=True):
         """Creates Price Chart for report"""
         # Read Parquet Files
         path = os.path.split(os.path.split(os.path.split(self.input().path)[0])[0])[0] + "/rawdata/"
@@ -101,10 +102,11 @@ class Visualize(Task):
         p.vbar(df.index[inc], 43200000, df.Open[inc], df.Close[inc], fill_color="lawngreen", line_color="red")
         p.vbar(df.index[dec], 43200000, df.Open[dec], df.Close[dec], fill_color="tomato", line_color="lime")
 
-        # Export Plot
-        export_png(p, filename=os.path.split(self.input().path)[0] + "/Stock_Chart.png")
+        # Export Plots (Dependent on a bool for testing purposes)
+        if export:
+            export_png(p, filename=os.path.split(self.input().path)[0] + "/Stock_Chart.png")
 
-    def create_table(self, path=None, dataframe=None, outpath="test.png"):
+    def create_table(self, path=None, dataframe=None, outpath="test.png", export=True):
         """Create image of data table from a path or a pandas dataframe"""
         if path:
             df = pd.read_csv(path)
@@ -116,9 +118,11 @@ class Visualize(Task):
         data_table = DataTable(
             columns=columns, source=ColumnDataSource(df), width=740, height=table_height
         )
-        export_png(data_table, filename=outpath)
+        # Export Plots (Dependent on a bool for testing purposes)
+        if export:
+            export_png(data_table, filename=outpath)
 
-    def create_report(self):
+    def create_report(self, include_images=True):
         """Takes scraped data and plots to create report"""
         # Create PDF
         pdf = FPDF()
@@ -136,20 +140,21 @@ class Visualize(Task):
         pdf.write(5,"\n\n\nStrategy: "+get_strategy_text(self.strategy)+"\n\nRecommendation: " +recommendation(self.input().path))
 
         # Plot Plot and Chart Images
-        root = os.path.split(self.input().path)[0]
-        WIDTH = 210
-        pdf.image(root + "/Profit_Plot.png", 2, 80, WIDTH / 2 - 5)
-        pdf.image(root + "/Ratio_Plot.png", WIDTH / 2 + 2, 80, WIDTH / 2 - 5)
-        pdf.image(root + "/Stock_Chart.png", 2, 155, WIDTH - 5)
-        pdf.image("tmp2.png", 2, 235, WIDTH-5)
+        if include_images:
+            root = os.path.split(self.input().path)[0]
+            WIDTH = 210
+            pdf.image(root + "/Profit_Plot.png", 2, 80, WIDTH / 2 - 5)
+            pdf.image(root + "/Ratio_Plot.png", WIDTH / 2 + 2, 80, WIDTH / 2 - 5)
+            pdf.image(root + "/Stock_Chart.png", 2, 155, WIDTH - 5)
+            pdf.image("tmp2.png", 2, 235, WIDTH-5)
 
-        # Second Page
-        pdf.add_page()
+            # Second Page
+            pdf.add_page()
 
-        # Add title and Plot Table
-        pdf.set_font("Times", "B", 16)
-        pdf.cell(2, 10, f"Backtest Trading Log",)
-        pdf.image("tmp1.png", 2, 20, WIDTH - 5)
+            # Add title and Plot Table
+            pdf.set_font("Times", "B", 16)
+            pdf.cell(2, 10, f"Backtest Trading Log",)
+            pdf.image("tmp1.png", 2, 20, WIDTH - 5)
 
         # Write PDF to output path
         pdf.output(self.output().path)
