@@ -11,8 +11,12 @@ def get_args(args):
     parser.add_argument("-sh", "--short", type=bool, nargs="?", const=True, default=False)
     parser.add_argument("-f", "--fast", type=int, nargs="?", default=12)
     parser.add_argument("-s", "--slow", type=int, nargs="?", default=26)
-    parser.add_argument("-u", "--sma", type=bool, nargs="?", const=True, default=False)
+    parser.add_argument("-sma", "--simple", type=bool, nargs="?", const=True, default=False)
     parser.add_argument("-g", "--signal", type=int, nargs="?", default=9)
+    parser.add_argument("-p", "--period", type=int, nargs="?", default=14)
+    parser.add_argument("-l", "--lower", type=int, nargs="?", default=30)
+    parser.add_argument("-u", "--upper", type=int, nargs="?", default=70)
+
     args = parser.parse_args()
     return args
 
@@ -29,7 +33,10 @@ def main(args):
                 short=args.short,
                 signal=args.signal,
                 slow=args.slow,
-                use_simple_ma=args.sma,
+                use_simple_ma=args.simple,
+                period=args.period,
+                lower=args.lower,
+                upper=args.upper
             )
         ],
         local_scheduler=True,
