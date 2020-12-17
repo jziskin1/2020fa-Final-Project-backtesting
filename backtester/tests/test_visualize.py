@@ -46,9 +46,6 @@ class TestTasks(TestCase):
                 "rawdata/_SUCCESS",
                 "rawdata/part.0.parquet",
                 "Repo1/Repo2/MA_test.csv",
-                "Repo1/Repo2/Profit_Plot.png",
-                "Repo1/Repo2/Ratio_Plot.png",
-                "Repo1/Repo2/Stock_Chart.png",
                 "Repo1/Repo2/Visualize_test.pdf"
             ]
 
