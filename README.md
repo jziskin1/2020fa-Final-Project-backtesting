@@ -94,17 +94,17 @@ The current available strategies are "MA_Divergence", "MACD_Signal_Divergence", 
 
 Choose to short with ```-sh``` or  ```--short```. Defaults to False (will not short unless told to.)
 
-Set the number of time periods to take the fast average over with ```-f <int>``` or ```--fast <int>```. (Only applicable to MA_Divergence and MACD_Signal_Divergence). Defaults to 12.
+Set the number of time periods to take the fast average over with ```-f <int>``` or ```--fast <int>```. Must be less than the slow value. (Only applicable to MA_Divergence and MACD_Signal_Divergence). Defaults to 12.
 
-Set the number of time periods to take the slow average over with ```-s <int>``` or ```--slow <int>```. (Only applicable to MA_Divergence and MACD_Signal_Divergence). Defaults to 26.
+Set the number of time periods to take the slow average over with ```-s <int>``` or ```--slow <int>```. Must be greater than the fast value. (Only applicable to MA_Divergence and MACD_Signal_Divergence). Defaults to 26.
 
 Use a simple average for MA_Divergence strategy with ```-sma``` or ```--simple```. (Only applicable to MA_Divergence). Defaults to False (will use exponential moving average by default.)
 
 Set the number of time periods signal line should calculate over with ```-g <int>``` or ```--signal <int>```. (Only applicable to MACD_Signal_Divergence). Defaults to 9.
 
-Set the lower bound signal for buying of oscillator with ```-l <int>``` or ```--lower <int>```. (Only applicable to RSI_OverSold and Stochastic_Crossover). Defaults to 30.
+Set the lower bound signal for buying of oscillator with ```-l <int>``` or ```--lower <int>```. Must be less than the upper bound. (Only applicable to RSI_OverSold and Stochastic_Crossover). Defaults to 30.
 
-Set the upper bound signal for selling of oscillator with ```-u <int>``` or ```--upper <int>```. (Only applicable to RSI_OverSold and Stochastic_Crossover). Defaults to 70.
+Set the upper bound signal for selling of oscillator with ```-u <int>``` or ```--upper <int>```. Must be greater than the lower bound. (Only applicable to RSI_OverSold and Stochastic_Crossover). Defaults to 70.
 
 Set the time period to calculate oscillator over with ```-p <int>``` or ```--period <int>```. (Only applicable to RSI_OverSold and Stochastic_Crossover). Defaults to 14.
 
