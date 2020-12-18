@@ -5,10 +5,10 @@
 ## Objective
 
 Backtesting is the general method for seeing how well a strategy or model would 
-have done by discovering how it would play out using historical data. This project
- aims to create an open source python project that pulls stock data from internet, 
- backtests a trading strategy chosen by a user, and produces meaningful output that 
- will either recommend or reject the given strategy.
+have done by discovering how it would play out using historical data. This project 
+aims to create an open source python project that pulls stock data from internet, 
+backtests a trading strategy chosen by a user, and produces meaningful output that 
+will either recommend or reject the given strategy.
 
 ## Strategy
 
@@ -28,7 +28,7 @@ One of the main staples of this package is just how many ways there are to custo
 each task to fit you analysis needs. Below are just some of the ways you parameters
 you can choose
 
- * Symbol: Choose from any stock symbol publicly listed on the NYSE anf foreign markets.
+ * Symbol: Choose from any stock symbol publicly listed on the NYSE and foreign markets.
 
  * Interval: Want to day trade? Let's analyze a 1 minute chart. Looking for more long term
  investments? Set that interval to 1 day or 1 week. 
@@ -79,6 +79,35 @@ used in the creation of this project.
 * Bokeh
 
 * FPDF
+
+## How to Run
+
+In order to run this project simply use ```python -m backtester```. You can parameterize 
+using the following arguments:
+
+Choose a stock with ```-sy <symbol>``` or ```--symbol <symbol>```. Defaults to 'AAPL'
+
+Choose a time interval with ```-i <interval>``` or ```--interval <interval>```. Intervals can be one of '1m', '2m', '5m', '15m', '1h', '1d', '5d', '1wk', '1mo', '3mo'. Defaults to '1d.'
+
+Choose a strategy with ```-S <strategy>``` or ```--strat <strategy>```.
+The current available strategies are "MA_Divergence", "MACD_Signal_Divergence", "RSI_OverSold", "Stochastic_Crossover." Defaults to MA_Divergence.
+
+Choose to short with ```-sh``` or  ```--short```. Defaults to False (will not short unless told to.)
+
+Set the number of time periods to take the fast average over with ```-f <int>``` or ```--fast <int>```. Must be less than the slow value. (Only applicable to MA_Divergence and MACD_Signal_Divergence). Defaults to 12.
+
+Set the number of time periods to take the slow average over with ```-s <int>``` or ```--slow <int>```. Must be greater than the fast value. (Only applicable to MA_Divergence and MACD_Signal_Divergence). Defaults to 26.
+
+Use a simple average for MA_Divergence strategy with ```-sma``` or ```--simple```. (Only applicable to MA_Divergence). Defaults to False (will use exponential moving average by default.)
+
+Set the number of time periods signal line should calculate over with ```-g <int>``` or ```--signal <int>```. (Only applicable to MACD_Signal_Divergence). Defaults to 9.
+
+Set the lower bound signal for buying of oscillator with ```-l <int>``` or ```--lower <int>```. Must be less than the upper bound. (Only applicable to RSI_OverSold and Stochastic_Crossover). Defaults to 30.
+
+Set the upper bound signal for selling of oscillator with ```-u <int>``` or ```--upper <int>```. Must be greater than the lower bound. (Only applicable to RSI_OverSold and Stochastic_Crossover). Defaults to 70.
+
+Set the time period to calculate oscillator over with ```-p <int>``` or ```--period <int>```. (Only applicable to RSI_OverSold and Stochastic_Crossover). Defaults to 14.
+
 
 ## Acknowledgements
 A special thanks to Dr. Scott Gorlin and all the students and TA's of Harvard 
